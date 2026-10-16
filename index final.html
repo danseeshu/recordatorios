@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Recordatorios por voz · Lima</title>
+<style>
+:root{color-scheme:dark;--bg:#0a0612;--card:#150f24;--ink:#f4edff;--mut:#a99bc7;--line:#2e2247;--pri:#8b5cf6;--pri2:#7c3aed;--pink:#ec4899;--cy:#22d3ee;--amb:#fbbf24;--rec:#f43f5e;--soft:#241838;--inp:#0f0a1b}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--ink);background:radial-gradient(900px 500px at 85% -10%,rgba(139,92,246,.38),transparent 60%),radial-gradient(700px 420px at -10% 25%,rgba(236,72,153,.2),transparent 60%),var(--bg);background-attachment:fixed;font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;max-width:1100px;margin:0 auto;padding:18px 16px 6px}
+h1{margin:0;font-size:1.6rem;background:linear-gradient(90deg,#c4b5fd,#f0abfc,#67e8f9);-webkit-background-clip:text;background-clip:text;color:transparent}
+header p{margin:2px 0 0;color:var(--mut);font-size:.85rem;max-width:46ch}
+.clock{text-align:right;display:flex;flex-direction:column}
+.clock b{font-size:1.9rem;font-variant-numeric:tabular-nums;line-height:1;color:#e9d5ff;text-shadow:0 0 18px rgba(167,139,250,.7)}
+.clock span{text-transform:capitalize}
+.clock small{color:var(--mut)}
+.perfiles{max-width:1100px;margin:0 auto;padding:8px 16px 0;display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:999px;padding:8px 16px;font:inherit;cursor:pointer}
+.chip.on{background:linear-gradient(135deg,var(--pri),var(--pink));border-color:transparent;font-weight:700}
+.chip.add{border-style:dashed;color:var(--cy)}
+.chip.del{color:#fb7185;margin-left:auto}
+main{max-width:1100px;margin:0 auto;padding:12px 16px 40px;display:grid;gap:14px;grid-template-areas:"d" "c" "l"}
+@media(min-width:860px){main{grid-template-columns:minmax(330px,420px) 1fr;grid-template-areas:"c d" "c l";align-items:start}}
+#dictado{grid-area:d;border-top:3px solid var(--pink)}#cal{grid-area:c;border-top:3px solid var(--pri)}#lista{grid-area:l;border-top:3px solid var(--cy)}
+.card{background:linear-gradient(160deg,#1b1232,#120c20);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0;box-shadow:0 8px 30px rgba(0,0,0,.45)}
+h2{margin:0 0 10px;font-size:1.05rem;color:#e9d5ff}
+.mic-row{display:flex;gap:14px;align-items:center;margin-bottom:12px}
+.mic-row small{display:block;color:var(--mut)}
+#mic{flex:none;width:68px;height:68px;border-radius:50%;border:0;background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;font-size:1.8rem;cursor:pointer;box-shadow:0 0 22px rgba(236,72,153,.5)}
+#mic.on{background:var(--rec);animation:p 1.2s infinite}
+@keyframes p{0%{box-shadow:0 0 0 0 rgba(244,63,94,.6)}100%{box-shadow:0 0 0 18px rgba(244,63,94,0)}}
+@media(prefers-reduced-motion:reduce){#mic.on{animation:none}}
+textarea,input{font:inherit;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--inp);width:100%}
+textarea{resize:vertical}
+::placeholder{color:#7d6f9c}
+:focus-visible{outline:3px solid var(--cy);outline-offset:1px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.btn{border:0;border-radius:8px;padding:9px 14px;font:inherit;font-weight:600;background:linear-gradient(135deg,var(--pri2),var(--pri));color:#fff;cursor:pointer}
+.btn:hover{filter:brightness(1.15)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.ghost{background:var(--soft);color:#d8c8ff;border:1px solid var(--line)}
+.draft{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;border:1px dashed var(--pink);border-radius:10px;padding:10px;margin-bottom:8px;background:rgba(139,92,246,.08)}
+.draft .t{grid-column:1/-1}
+.x{border:0;background:none;color:var(--mut);font-size:1.2rem;cursor:pointer;padding:0 6px}
+.x:hover{color:var(--rec)}
+.cal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px}
+.cal-h b{font-size:1.1rem;text-transform:capitalize;color:#e9d5ff}
+.cal-h button{width:40px;height:40px;border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:8px;font-size:1.1rem;cursor:pointer}
+.cal-h button:disabled{opacity:.3;cursor:default}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dow{text-align:center;font-size:.75rem;color:var(--mut);padding:2px 0}
+.day{aspect-ratio:1;border:1px solid transparent;border-radius:10px;background:#1d1433;font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0;color:var(--ink)}
+.day:hover{background:#2a1d4a}
+.day.hol{color:var(--amb);font-weight:700}
+.day.today{border:2px solid var(--cy)}
+.day.sel{background:linear-gradient(135deg,var(--pri),var(--pink));color:#fff}
+.day i{width:6px;height:6px;border-radius:50%;background:var(--pink);visibility:hidden}
+.day.has i{visibility:visible}
+.day.sel i{background:#fff}
+.day.blank{background:none;cursor:default}
+.leg{font-size:.78rem;color:var(--mut);margin:8px 0 0}
+.hl{font-size:.85rem;color:var(--amb);margin:0 0 8px}
+.item{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
+.item input{width:22px;height:22px;margin-top:2px;flex:none;padding:0;accent-color:var(--pri)}
+.item .b{flex:1;min-width:0;overflow-wrap:anywhere}
+.item .w{font-size:.85rem;color:var(--cy)}
+.item.done .tx{text-decoration:line-through;color:var(--mut)}
+.item.done .w{color:var(--mut)}
+.item.late .w{color:#fb7185;font-weight:600}
+.empty{color:var(--mut);padding:8px 0}
+#toasts{position:fixed;left:12px;right:12px;bottom:12px;display:flex;flex-direction:column;gap:8px;align-items:center;z-index:20}
+.toast{background:#2a1850;border:1px solid var(--pri);color:#fff;padding:12px 16px;border-radius:12px;max-width:460px;width:100%;display:flex;gap:12px;align-items:center;justify-content:space-between;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+.toast button{border:0;background:var(--pink);color:#fff;border-radius:8px;padding:6px 12px;font-weight:600;cursor:pointer}
+#star{position:fixed;right:0;top:42%;width:56px;height:56px;border-radius:28px 0 0 28px;border:0;background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#3b2a00;font-size:1.7rem;cursor:pointer;box-shadow:0 0 20px rgba(251,191,36,.5);z-index:8}
+#badge{position:absolute;top:-6px;left:-6px;background:var(--pink);color:#fff;border-radius:10px;font-size:.75rem;min-width:20px;padding:1px 5px;font-weight:700}
+#panel{position:fixed;top:0;right:0;bottom:0;width:min(380px,92vw);background:#150f24;border-left:2px solid var(--amb);box-shadow:-6px 0 28px rgba(0,0,0,.6);transform:translateX(105%);visibility:hidden;transition:transform .25s,visibility .25s;z-index:10;display:flex;flex-direction:column;padding:16px;padding-top:calc(16px + env(safe-area-inset-top))}
+#panel.open{transform:none;visibility:visible}
+#panel ul{list-style:none;margin:0;padding:0;overflow:auto;flex:1}
+.ph{display:flex;justify-content:space-between;align-items:center}
+.idea{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.idea input{width:22px;height:22px;flex:none;padding:0;margin-top:2px;accent-color:var(--amb)}
+.idea .b{flex:1;min-width:0;overflow-wrap:anywhere}
+.idea .b b{color:var(--amb)}
+.idea .w{font-size:.8rem;color:var(--mut)}
+@media(prefers-reduced-motion:reduce){#panel{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>Recordatorios por voz</h1><p id="modo"></p></div>
+  <div class="clock"><b id="hora">--:--:--</b><span id="fecha"></span><small>Hora de Lima, Perú</small></div>
+</header>
+<nav class="perfiles" id="perfiles" aria-label="Perfiles"></nav>
+<main>
+  <section class="card" id="dictado">
+    <h2>Dictar un recordatorio</h2>
+    <div class="mic-row">
+      <button id="mic" aria-label="Empezar a dictar">🎙</button>
+      <div><b id="estado">Toca el micrófono y habla</b>
+      <small>Ej.: “Recuérdame mañana a las 3 de la tarde llamar al doctor”. Se guarda solo, en el día y la hora que digas. Para una idea: di “idea espontánea”, cuéntala y cierra con “nada más”.</small></div>
+    </div>
+    <textarea id="txt" rows="3" placeholder="Aquí aparece lo que dictas. También puedes escribir."></textarea>
+    <div class="row">
+      <button class="btn" id="interp">Guardar lo escrito</button>
+      <button class="btn ghost" id="manual">Añadir manualmente</button>
+    </div>
+    <div id="drafts"></div>
+    <div class="row" id="guardarRow" hidden><button class="btn" id="guardar">Guardar recordatorios</button></div>
+  </section>
+
+  <section class="card" id="cal">
+    <div class="cal-h"><button id="prev" aria-label="Mes anterior">‹</button><b id="mes"></b><button id="next" aria-label="Mes siguiente">›</button></div>
+    <div class="grid" id="grid"></div>
+    <p class="leg">Punto rojo: hay recordatorios · Naranja: feriado · Borde verde: hoy</p>
+  </section>
+
+  <section class="card" id="lista">
+    <div class="cal-h"><h2 id="ltitulo" style="margin:0"></h2><div class="row" style="margin:0"><button class="btn ghost" id="selmode" style="width:auto;height:auto">Borrar varios</button><button class="btn ghost" id="todos" style="width:auto;height:auto">Ver todos</button></div></div>
+    <p class="hl" id="feriado" hidden></p>
+    <div class="row" id="selbar" hidden><button class="btn" id="delsel">Borrar seleccionados (0)</button></div>
+    <div id="items"></div>
+  </section>
+</main>
+<button id="star" aria-label="Abrir ideas espontáneas" aria-expanded="false">★<span id="badge" hidden>0</span></button>
+<aside id="panel" aria-label="Ideas espontáneas">
+  <div class="ph"><h2 style="margin:0">Ideas espontáneas</h2><button class="x" id="pclose" aria-label="Cerrar">✕</button></div>
+  <p class="leg">Di “idea espontánea”, cuenta tu idea y termina con “nada más”.</p>
+  <div class="row"><button class="btn ghost" id="iall">Seleccionar todas</button><button class="btn" id="idel" disabled>Borrar seleccionadas (0)</button></div>
+  <ul id="ilist"></ul>
+</aside>
+<div id="toasts"></div>
+
+<script>
+/* ====== CONFIGURACIÓN ======
+   Para que TODOS vean los mismos recordatorios, pega aquí la URL de tu
+   Firebase Realtime Database (sin barra final). Ej:
+   "https://mi-proyecto-default-rtdb.firebaseio.com"
+   Si la dejas vacía, los recordatorios se guardan solo en este dispositivo. */
+const DB_URL = "https://recordatorios-91966-default-rtdb.firebaseio.com";
+const TZ = "America/Lima";
+
+const $ = s => document.querySelector(s);
+const pad = n => String(n).padStart(2, "0");
+const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const MES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const DIAS = ["domingo","lunes","martes","miercoles","jueves","viernes","sabado"];
+const NUM = {un:1,una:1,dos:2,tres:3,cuatro:4,cinco:5,diez:10,quince:15,treinta:30};
+
+/* ---- Hora de Lima ---- */
+function limaParts(){
+  const p = {};
+  new Intl.DateTimeFormat("en-CA",{timeZone:TZ,hourCycle:"h23",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",second:"2-digit"})
+    .formatToParts(new Date()).forEach(x => { if(x.type!=="literal") p[x.type]=x.value; });
+  return p;
+}
+const todayStr = () => { const p=limaParts(); return `${p.year}-${p.month}-${p.day}`; };
+const nowStr = () => { const p=limaParts(); return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`; };
+const addDays = (ds,n) => { const d=new Date(ds+"T12:00:00Z"); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); };
+const wday = ds => new Date(ds+"T12:00:00Z").getUTCDay();
+const fmtD = ds => new Date(ds+"T12:00:00Z").toLocaleDateString("es-PE",{weekday:"long",day:"numeric",month:"long",timeZone:"UTC"});
+const fmtT = t => { const [h,m]=t.split(":"); return `${(+h)%12||12}:${m} ${+h<12?"a. m.":"p. m."}`; };
+
+function tick(){
+  const p = limaParts();
+  $("#hora").textContent = `${p.hour}:${p.minute}:${p.second}`;
+  $("#fecha").textContent = fmtD(`${p.year}-${p.month}-${p.day}`) + " de " + p.year;
+}
+
+/* ---- Interpretación del dictado ---- */
+const norm = s => s.toLowerCase().replace(/[áàä]/g,"a").replace(/[éèë]/g,"e").replace(/[íìï]/g,"i").replace(/[óòö]/g,"o").replace(/[úùü]/g,"u").replace(/ñ/g,"n");
+
+function parse(raw){
+  let o = raw.trim(), n = norm(o), date = null, time = null, m;
+  const take = re => { const x = re.exec(n); if(x){ o=o.slice(0,x.index)+" "+o.slice(x.index+x[0].length); n=n.slice(0,x.index)+" "+n.slice(x.index+x[0].length); } return x; };
+  const now = nowStr(), today = now.slice(0,10);
+
+  if(m = take(/\b(?:dentro de|en) (\d+|un|una|dos|tres|cuatro|cinco|diez|quince|treinta) (minuto|hora|dia|semana)s?\b/)){
+    const k = NUM[m[1]] ?? +m[1], u = m[2];
+    if(u==="dia") date = addDays(today,k);
+    else if(u==="semana") date = addDays(today,7*k);
+    else { const d = new Date(now+":00Z"); d.setUTCMinutes(d.getUTCMinutes()+k*(u==="hora"?60:1)); const s=d.toISOString(); date=s.slice(0,10); time=s.slice(11,16); }
+  }
+  if(!time){
+    let h=null, mi=0, per="";
+    if(m = take(/\ba las? (\d{1,2})(?:[:.](\d{2}))?(?:\s*(y media|y cuarto|menos cuarto))?(?:\s*(?:de la |del |en la |de )?(am|pm|tarde|noche|madrugada)|\s+(?:de la |en la )(manana))?(?!\d)/)){
+      h=+m[1]; mi=m[2]?+m[2]:0;
+      if(m[3]==="y media") mi=30; else if(m[3]==="y cuarto") mi=15; else if(m[3]==="menos cuarto"){ h--; mi=45; }
+      per = m[4]||m[5]||"";
+    } else if(m = take(/\b(\d{1,2}):(\d{2})\s*(am|pm)?/)){ h=+m[1]; mi=+m[2]; per=m[3]||""; }
+    else if(take(/\b(?:al )?mediodia\b/)) h=12;
+    else if(take(/\bmedianoche\b/)) h=0;
+    if(h!==null){
+      if(["pm","tarde","noche"].includes(per) && h<12) h+=12;
+      if(["am","manana","madrugada"].includes(per) && h===12) h=0;
+      time = pad((h+24)%24)+":"+pad(mi);
+    }
+  }
+  if(!date){
+    if(take(/\besta noche\b/)){ date=today; time=time||"20:00"; }
+    else if(take(/\bpasado manana\b/)) date=addDays(today,2);
+    else if(take(/\bmanana\b/)) date=addDays(today,1);
+    else if(take(/\bhoy\b/)) date=today;
+    else if(m = take(/\b(?:el |este )?(\d{1,2}) de (enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?: (?:de|del) (\d{4}))?/)){
+      const mo = m[2]==="setiembre" ? 8 : MES.indexOf(m[2]), y = m[3] ? +m[3] : +today.slice(0,4);
+      date = `${y}-${pad(mo+1)}-${pad(+m[1])}`;
+      if(!m[3] && date<today) date = `${y+1}-${pad(mo+1)}-${pad(+m[1])}`;
+    }
+    else if(m = take(/\b(?:el |este |proximo )(lunes|martes|miercoles|jueves|viernes|sabado|domingo)\b/)){
+      date = addDays(today, (DIAS.indexOf(m[1])-wday(today)+7)%7 || 7);
+    }
+    else if(m = take(/\bel (\d{1,2})\b/)){
+      const y=+today.slice(0,4), mo=+today.slice(5,7)-1;
+      date = `${y}-${pad(mo+1)}-${pad(+m[1])}`;
+      if(date<today) date = new Date(Date.UTC(y,mo+1,+m[1])).toISOString().slice(0,10);
+    }
+  }
+  if(!time) time = "09:00";
+  if(!date) date = `${today}T${time}` > now ? today : addDays(today,1);
+
+  let t = o.replace(/\s+/g," ").trim().replace(/^(por favor[, ]*)?(recu[eé]rdame|recordarme|recuerda|anota|apunta|agenda|crea un recordatorio|recordatorio)\b[,:]?\s*/i,"");
+  for(let i=0;i<3;i++) t = t.replace(/^(para|de|que|y|en|a)\s+/i,"").replace(/\s+(para|el|de|en|y|que|a|las|la)$/i,"");
+  t = t.replace(/^[,.\s]+|[,.\s]+$/g,"");
+  return { text: t ? t[0].toUpperCase()+t.slice(1) : "", date, time };
+}
+const splitDictado = raw => raw.split(/\s*(?:[.;]\s+|\bademas\b|\botro recordatorio\b|\by luego\b)\s*|(?=\brecu[eé]rdame\b)/i).filter(s => s && s.trim().length>2);
+
+/* ---- Datos (compartidos o locales) ---- */
+let profiles = [], cur = localStorage.getItem("perfil") || null, ideas = [], selI = new Set(), selMode = false, selR = new Set(), items = [], sel = todayStr(), view = {y:+todayStr().slice(0,4), m:+todayStr().slice(5,7)-1}, drafts = [];
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const persist = () => { if(!DB_URL && cur){ localStorage.setItem("rem_"+cur, JSON.stringify(items)); localStorage.setItem("ideas_"+cur, JSON.stringify(ideas)); } };
+
+const api = p => `${DB_URL}/${p}.json`;
+async function load(){
+  if(DB_URL){
+    try {
+      const pr = await fetch(api("profiles")).then(r=>r.json());
+      profiles = Object.values(pr||{});
+      if(!profiles.some(x=>x.id===cur)) cur = profiles[0] ? profiles[0].id : null;
+      if(cur){
+        const [a,b] = await Promise.all([fetch(api("p/"+cur+"/reminders")).then(r=>r.json()), fetch(api("p/"+cur+"/ideas")).then(r=>r.json())]);
+        items = Object.values(a||{}); ideas = Object.values(b||{});
+      } else { items=[]; ideas=[]; }
+    } catch(e){ return; }
+  } else {
+    try {
+      profiles = JSON.parse(localStorage.getItem("profiles")||"[]");
+      if(!profiles.some(x=>x.id===cur)) cur = profiles[0] ? profiles[0].id : null;
+      items = cur ? JSON.parse(localStorage.getItem("rem_"+cur)||"[]") : [];
+      ideas = cur ? JSON.parse(localStorage.getItem("ideas_"+cur)||"[]") : [];
+    } catch(e){ items=[]; ideas=[]; }
+  }
+  if(cur) localStorage.setItem("perfil",cur); else localStorage.removeItem("perfil");
+  render();
+}
+async function put(r){
+  if(!cur){ nuevoPerfil(); return; }
+  const i = items.findIndex(x=>x.id===r.id); if(i>=0) items[i]=r; else items.push(r);
+  persist(); render();
+  if(DB_URL) try { await fetch(api(`p/${cur}/reminders/${r.id}`),{method:"PUT",body:JSON.stringify(r)}); } catch(e){ toast("Sin conexión: no se pudo guardar en el enlace compartido."); }
+}
+async function del(id){
+  items = items.filter(x=>x.id!==id); persist(); render();
+  if(DB_URL) try { await fetch(api(`p/${cur}/reminders/${id}`),{method:"DELETE"}); } catch(e){}
+}
+
+/* ---- Perfiles ---- */
+function renderPerfiles(){
+  $("#perfiles").innerHTML = profiles.map(x=>`<button class="chip${x.id===cur?" on":""}" data-p="${x.id}">${esc(x.name)}</button>`).join("")
+    + '<button class="chip add" id="addp">＋ Nuevo perfil</button>' + (cur ? '<button class="chip del" id="delp">Eliminar perfil</button>' : "");
+}
+async function nuevoPerfil(){
+  const name = (prompt("Nombre del perfil (por ejemplo: Daniel)")||"").trim().slice(0,30);
+  if(!name) return;
+  const x = {id:uid(), name};
+  profiles.push(x); cur = x.id; items=[]; ideas=[]; selI.clear(); selR.clear(); selMode=false; sel=todayStr();
+  localStorage.setItem("perfil",cur);
+  if(DB_URL) try { await fetch(api("profiles/"+x.id),{method:"PUT",body:JSON.stringify(x)}); } catch(e){ toast("Sin conexión: el perfil no se pudo compartir."); }
+  else localStorage.setItem("profiles", JSON.stringify(profiles));
+  render(); toast("Perfil «"+name+"» creado.");
+}
+function cambiarPerfil(id){
+  cur = id; localStorage.setItem("perfil",id); items=[]; ideas=[]; selI.clear(); selR.clear(); selMode=false; sel=todayStr(); render(); load();
+}
+async function borrarPerfil(){
+  const x = profiles.find(y=>y.id===cur);
+  if(!x || !confirm(`¿Eliminar el perfil «${x.name}» con todos sus recordatorios e ideas?`)) return;
+  const id = cur; profiles = profiles.filter(y=>y.id!==id); cur = profiles[0] ? profiles[0].id : null;
+  if(DB_URL) try { await fetch(api("profiles/"+id),{method:"DELETE"}); await fetch(api("p/"+id),{method:"DELETE"}); } catch(e){}
+  else { localStorage.setItem("profiles", JSON.stringify(profiles)); localStorage.removeItem("rem_"+id); localStorage.removeItem("ideas_"+id); }
+  items=[]; ideas=[]; await load(); if(!cur) nuevoPerfil();
+}
+
+/* ---- Calendario ---- */
+const HOL = {"01-01":"Año Nuevo","05-01":"Día del Trabajo","06-29":"San Pedro y San Pablo","07-28":"Fiestas Patrias","07-29":"Fiestas Patrias","08-06":"Batalla de Junín","08-30":"Santa Rosa de Lima","10-08":"Combate de Angamos","11-01":"Todos los Santos","12-08":"Inmaculada Concepción","12-09":"Batalla de Ayacucho","12-25":"Navidad"};
+const holiday = ds => HOL[ds.slice(5)] || (ds==="2026-04-02"?"Jueves Santo":ds==="2026-04-03"?"Viernes Santo":null);
+
+function renderCal(){
+  const {y,m} = view, today = todayStr();
+  $("#mes").textContent = `${MES[m]} ${y}`;
+  $("#prev").disabled = m===0; $("#next").disabled = m===11;
+  const off = (new Date(Date.UTC(y,m,1)).getUTCDay()+6)%7, dim = new Date(Date.UTC(y,m+1,0)).getUTCDate();
+  const cnt = {}; items.forEach(r => { const d=r.when.slice(0,10); cnt[d]=(cnt[d]||0)+1; });
+  let h = ["L","M","M","J","V","S","D"].map(d=>`<div class="dow">${d}</div>`).join("") + '<div class="day blank"></div>'.repeat(off);
+  for(let d=1; d<=dim; d++){
+    const ds = `${y}-${pad(m+1)}-${pad(d)}`;
+    h += `<button class="day${ds===today?" today":""}${ds===sel?" sel":""}${cnt[ds]?" has":""}${holiday(ds)?" hol":""}" data-d="${ds}" aria-label="${fmtD(ds)}">${d}<i></i></button>`;
+  }
+  $("#grid").innerHTML = h;
+}
+
+function renderList(){
+  selBar();
+  const now = nowStr();
+  let list = items.slice().sort((a,b)=>a.when.localeCompare(b.when));
+  const fer = sel && holiday(sel);
+  $("#feriado").hidden = !fer; if(fer) $("#feriado").textContent = "Feriado: "+fer;
+  if(sel){ list = list.filter(r=>r.when.startsWith(sel)); $("#ltitulo").textContent = sel===todayStr() ? "Hoy" : fmtD(sel); }
+  else $("#ltitulo").textContent = "Todos los recordatorios";
+  $("#todos").style.display = sel ? "" : "none";
+  $("#items").innerHTML = list.length ? list.map(r=>{
+    const [d,t] = r.when.split("T");
+    return `<div class="item${r.done?" done":""}${!r.done&&r.when<now?" late":""}">
+      ${selMode ? `<input type="checkbox" data-sel="${r.id}" ${selR.has(r.id)?"checked":""} aria-label="Seleccionar para borrar">` : `<input type="checkbox" data-done="${r.id}" ${r.done?"checked":""} aria-label="Marcar como hecho">`}
+      <div class="b"><div class="tx">${esc(r.text)}</div><div class="w">${sel?"":fmtD(d)+" · "}${fmtT(t)}${!r.done&&r.when<now?" · vencido":""}</div></div>
+      <button class="x" data-del="${r.id}" aria-label="Eliminar">✕</button></div>`;
+  }).join("") : `<div class="empty">${sel?"No hay recordatorios este día. Dicta uno con el micrófono.":"Aún no hay recordatorios."}</div>`;
+}
+function selBar(){ $("#selbar").hidden = !selMode; $("#delsel").textContent = `Borrar seleccionados (${selR.size})`; $("#selmode").textContent = selMode ? "Cancelar" : "Borrar varios"; }
+
+/* ---- Ideas espontáneas ---- */
+function renderIdeas(){
+  const l = ideas.slice().sort((a,b)=>a.created-b.created);
+  $("#badge").textContent = l.length; $("#badge").hidden = !l.length;
+  $("#ilist").innerHTML = l.length ? l.map((r,i)=>`<li class="idea"><input type="checkbox" data-isel="${r.id}" ${selI.has(r.id)?"checked":""} aria-label="Seleccionar idea ${i+1}"><div class="b"><b>${i+1}.</b> ${esc(r.text)}<div class="w">${new Date(r.created).toLocaleString("es-PE",{timeZone:TZ,day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</div></div></li>`).join("") : '<li class="empty">Aún no tienes ideas. Di “idea espontánea”, cuéntala y termina con “nada más”.</li>';
+  $("#idel").textContent = `Borrar seleccionadas (${selI.size})`; $("#idel").disabled = !selI.size;
+}
+async function putIdea(r){
+  if(!cur){ nuevoPerfil(); return; }
+  ideas.push(r); persist(); renderIdeas();
+  if(DB_URL) try { await fetch(api(`p/${cur}/ideas/${r.id}`),{method:"PUT",body:JSON.stringify(r)}); } catch(e){ toast("Sin conexión: la idea no se pudo compartir."); }
+}
+async function delIdeas(ids){
+  ideas = ideas.filter(x=>!ids.includes(x.id)); ids.forEach(i=>selI.delete(i)); persist(); renderIdeas();
+  if(DB_URL) for(const id of ids) try { await fetch(api(`p/${cur}/ideas/${id}`),{method:"DELETE"}); } catch(e){}
+}
+function extraerIdeas(raw){
+  const n = norm(raw), out = []; let rest = "", i = 0;
+  while(true){
+    const a = n.indexOf("idea espontanea", i);
+    if(a<0){ rest += " "+raw.slice(i); break; }
+    rest += " "+raw.slice(i,a);
+    const s0 = a+15, b = n.indexOf("nada mas", s0);
+    const t = raw.slice(s0, b<0 ? raw.length : b).replace(/^[\s,.:;]+|[\s,.:;]+$/g,"");
+    if(t) out.push(t[0].toUpperCase()+t.slice(1));
+    if(b<0) break;
+    i = b+8;
+  }
+  return {ideas:out, rest:rest.trim()};
+}
+const render = () => { renderPerfiles(); renderCal(); renderList(); renderIdeas(); };
+
+/* ---- Borradores ---- */
+function renderDrafts(){
+  $("#drafts").innerHTML = drafts.map((d,i)=>`<div class="draft">
+    <input class="t" data-i="${i}" data-k="text" value="${esc(d.text)}" placeholder="¿Qué quieres recordar?" aria-label="Texto">
+    <input type="date" data-i="${i}" data-k="date" value="${d.date}" aria-label="Fecha">
+    <input type="time" data-i="${i}" data-k="time" value="${d.time}" aria-label="Hora">
+    <button class="x" data-rm="${i}" aria-label="Quitar">✕</button></div>`).join("");
+  $("#guardarRow").hidden = !drafts.length;
+}
+async function interpretar(){
+  const raw = $("#txt").value.trim(); if(!raw) return;
+  if(!cur){ nuevoPerfil(); return; }
+  $("#txt").value = "";
+  const {ideas:nuevas, rest} = extraerIdeas(raw);
+  for(const t of nuevas) await putIdea({id:uid(), text:t, created:Date.now()});
+  if(nuevas.length) toast(nuevas.length===1 ? "💡 Idea guardada (n.º "+ideas.length+")." : "💡 "+nuevas.length+" ideas guardadas.");
+  const ok = [];
+  if(rest.length>2) for(const seg of splitDictado(rest)){
+    const d = parse(seg); if(!d.text) continue;
+    await put({id:uid(), text:d.text, when:`${d.date}T${d.time}`, done:false}); ok.push(d);
+  }
+  if(ok.length){
+    sel = ok[0].date; view = {y:+sel.slice(0,4), m:+sel.slice(5,7)-1}; render();
+    toast(ok.length===1 ? `✅ Guardado: ${ok[0].text} · ${fmtD(ok[0].date)}, ${fmtT(ok[0].time)}` : `✅ ${ok.length} recordatorios guardados.`);
+  } else if(!nuevas.length) toast("No entendí qué recordar. Prueba: “recuérdame mañana a las 3 pagar la luz”.");
+}
+$("#interp").onclick = interpretar;
+$("#manual").onclick = () => { drafts.push({text:"",date:sel||todayStr(),time:"09:00"}); renderDrafts(); };
+$("#drafts").addEventListener("input", e => { const t=e.target; if(t.dataset.i) drafts[+t.dataset.i][t.dataset.k]=t.value; });
+$("#drafts").addEventListener("click", e => { const i=e.target.dataset.rm; if(i!==undefined){ drafts.splice(+i,1); renderDrafts(); } });
+$("#guardar").onclick = async () => {
+  const ok = drafts.filter(d=>d.text.trim() && d.date && d.time);
+  if(!ok.length){ toast("Escribe el texto, la fecha y la hora."); return; }
+  for(const d of ok) await put({id:uid(), text:d.text.trim(), when:`${d.date}T${d.time}`, done:false});
+  sel = ok[0].date; view = {y:+sel.slice(0,4), m:+sel.slice(5,7)-1};
+  drafts = []; renderDrafts(); render();
+  toast(ok.length===1 ? "Recordatorio guardado." : ok.length+" recordatorios guardados.");
+};
+
+/* ---- Micrófono ---- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, listening = false, base = "", silTimer = null;
+const SIL_MS = 5000;
+function setMic(on){ listening=on; $("#mic").classList.toggle("on",on); $("#estado").textContent = on ? "Escuchando… se detiene tras 5 s de silencio" : "Toca el micrófono y habla"; $("#mic").setAttribute("aria-label", on?"Detener dictado":"Empezar a dictar"); }
+function armSilence(){
+  clearTimeout(silTimer);
+  silTimer = setTimeout(() => { if(listening){ listening=false; try{ rec.stop(); }catch(e){} toast("Grabación terminada tras 5 segundos de silencio."); } }, SIL_MS);
+}
+function initRec(){
+  rec = new SR(); rec.lang = "es-PE"; rec.continuous = true; rec.interimResults = true;
+  rec.onaudiostart = armSilence;
+  rec.onresult = e => {
+    armSilence();
+    let t=""; for(let i=0;i<e.results.length;i++) t += e.results[i][0].transcript;
+    $("#txt").value = base + t;
+    const nn = norm($("#txt").value);
+    if(/idea espontanea/.test(nn) && /nada mas[\s.,!]*$/.test(nn)){ listening = false; rec.stop(); }
+  };
+  rec.onerror = e => { if(e.error==="not-allowed"||e.error==="service-not-allowed"){ listening=false; clearTimeout(silTimer); setMic(false); toast("El navegador bloqueó el micrófono. Toca el candado junto a la dirección y elige «Permitir»."); } };
+  rec.onend = () => {
+    if(listening){ base = $("#txt").value.trim()+" "; try{ rec.start(); }catch(e){} }
+    else { clearTimeout(silTimer); setMic(false); interpretar(); }
+  };
+}
+/* Los avisos se piden una sola vez; el navegador recuerda la respuesta. */
+async function pedirNotif(){
+  if(!("Notification" in window) || localStorage.getItem("notifPedido")) return;
+  localStorage.setItem("notifPedido","1");
+  if(Notification.permission==="default") try{ await Notification.requestPermission(); }catch(e){}
+}
+$("#mic").onclick = () => {
+  if(!SR){ toast("Tu navegador no permite dictado. Usa Chrome, Edge o Safari, o escribe el texto."); return; }
+  pedirNotif();
+  if(listening){ listening=false; clearTimeout(silTimer); try{ rec.stop(); }catch(e){} return; }
+  if(!rec) initRec();
+  base = $("#txt").value ? $("#txt").value.trim()+" " : "";
+  try { rec.start(); setMic(true); } catch(e){}
+};
+if(location.protocol==="file:") toast("Abre la página desde su enlace https (GitHub Pages): desde un archivo local el navegador vuelve a pedir permisos cada vez.", true);
+
+/* ---- Eventos de calendario y lista ---- */
+$("#grid").onclick = e => { const b=e.target.closest("[data-d]"); if(b){ sel=b.dataset.d; render(); } };
+$("#prev").onclick = () => { if(view.m>0){ view.m--; renderCal(); } };
+$("#next").onclick = () => { if(view.m<11){ view.m++; renderCal(); } };
+$("#todos").onclick = () => { sel=null; render(); };
+$("#items").addEventListener("click", e => {
+  if(e.target.dataset.sel){ e.target.checked ? selR.add(e.target.dataset.sel) : selR.delete(e.target.dataset.sel); selBar(); }
+  if(e.target.dataset.del) del(e.target.dataset.del);
+  if(e.target.dataset.done){ const r=items.find(x=>x.id===e.target.dataset.done); if(r) put({...r,done:e.target.checked}); }
+});
+
+/* ---- Avisos ---- */
+function toast(msg, sticky){
+  const d = document.createElement("div"); d.className="toast"; d.setAttribute("role","status");
+  d.innerHTML = `<span>${esc(msg)}</span>${sticky?"<button>Entendido</button>":""}`;
+  $("#toasts").appendChild(d);
+  if(sticky) d.querySelector("button").onclick = () => d.remove(); else setTimeout(()=>d.remove(),3500);
+}
+function beep(){ try{ const c=new AudioContext(), o=c.createOscillator(); o.connect(c.destination); o.frequency.value=880; o.start(); setTimeout(()=>{o.stop();c.close();},350); }catch(e){} }
+function checkAlerts(){
+  const now = nowStr(), seen = JSON.parse(localStorage.getItem("alerted")||"[]");
+  const limit = new Date(Date.now()-12*3600e3).toISOString().slice(0,16);
+  items.filter(r=>!r.done && r.when<=now && r.when>=limit && !seen.includes(r.id)).forEach(r=>{
+    seen.push(r.id);
+    toast("⏰ "+fmtT(r.when.slice(11))+" · "+r.text, true); beep();
+    if("Notification" in window && Notification.permission==="granted") try{ new Notification("Recordatorio",{body:r.text}); }catch(e){}
+  });
+  localStorage.setItem("alerted", JSON.stringify(seen.slice(-200)));
+}
+
+/* ---- Inicio ---- */
+$("#modo").textContent = DB_URL ? "Todo se guarda solo y en línea: cualquiera con el enlace puede abrir sus perfiles." : "Todo se guarda solo en este dispositivo. Para guardarlo en el enlace compartido, conecta la base de datos (DB_URL en el código).";
+$("#star").onclick = () => { const o = $("#panel").classList.toggle("open"); $("#star").setAttribute("aria-expanded", o); };
+$("#pclose").onclick = () => { $("#panel").classList.remove("open"); $("#star").setAttribute("aria-expanded","false"); };
+document.addEventListener("keydown", e => { if(e.key==="Escape") $("#pclose").click(); });
+$("#ilist").addEventListener("click", e => { const id = e.target.dataset.isel; if(id){ e.target.checked ? selI.add(id) : selI.delete(id); renderIdeas(); } });
+$("#iall").onclick = () => { if(selI.size===ideas.length) selI.clear(); else ideas.forEach(r=>selI.add(r.id)); renderIdeas(); };
+$("#idel").onclick = () => { if(selI.size && confirm(`¿Borrar ${selI.size} idea(s)?`)) delIdeas([...selI]); };
+$("#selmode").onclick = () => { selMode = !selMode; selR.clear(); renderList(); };
+$("#delsel").onclick = async () => {
+  if(!selR.size || !confirm(`¿Borrar ${selR.size} recordatorio(s)?`)) return;
+  const ids = [...selR]; selR.clear(); selMode = false;
+  for(const id of ids) await del(id);
+};
+$("#perfiles").addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b) return;
+  if(b.dataset.p){ if(b.dataset.p!==cur) cambiarPerfil(b.dataset.p); }
+  else if(b.id==="addp") nuevoPerfil(); else if(b.id==="delp") borrarPerfil();
+});
+tick(); setInterval(tick,1000);
+load().then(() => { if(!cur) nuevoPerfil(); checkAlerts(); });
+setInterval(checkAlerts,15000);
+if(DB_URL) setInterval(load,8000);
+</script>
+</body>
+</html>
